@@ -1,8 +1,8 @@
-//import React from 'react';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 import { Box, TextField, Button, Typography } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
 
 // Validation schema
 const schema = yup.object().shape({
@@ -15,10 +15,12 @@ function AdminForm() {
   const { register, handleSubmit, formState: { errors } } = useForm({
     resolver: yupResolver(schema),
   });
+  const navigate = useNavigate();
 
   const onSubmit = (data) => {
-    console.log(data);
-    // Add logic to submit data to the backend
+    console.log('Registration Data:', data);
+    // Simulate sending data to backend (for now, pass it to admin login)
+    navigate('/admin-login', { state: { registrationData: data } });
   };
 
   return (
@@ -30,7 +32,7 @@ function AdminForm() {
         mx: 'auto',
         mt: 4,
         p: 4,
-        backgroundColor: 'rgba(255, 255, 255, 0.9)', // Semi-transparent white background
+        backgroundColor: 'rgba(255, 255, 255, 0.9)',
         borderRadius: 2,
         boxShadow: 3,
       }}
