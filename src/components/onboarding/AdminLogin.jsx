@@ -7,16 +7,27 @@ function AdminLogin() {
   const [password, setPassword] = useState('');
   const navigate = useNavigate();
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    // No validation for now - accept any login attempt
-    const mockAdminData = {
-      fullName: 'Test Admin',
-      email: email || 'test@admin.com', // Use entered email or default
-    };
+    try {
+        const response = await fetch('http://localhost:5000/admin/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password }),
+        });
 
-    // Navigate to AdminProfile with mock data
-    navigate('/profile/admin', { state: { adminData: mockAdminData } });
+        const result = await response.json();
+
+        if (response.ok) {
+            console.log('Login successful:', result);
+            localStorage.setItem("token", result.token);  // Store token
+            navigate('/admin/upload');  // Redirect to upload page
+        } else {
+            console.error('Login failed:', result.error);
+        }
+    } catch (error) {
+        console.error('Error:', error);
+    }
   };
 
   return (

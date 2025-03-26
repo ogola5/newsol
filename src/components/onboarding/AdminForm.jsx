@@ -17,10 +17,25 @@ function AdminForm() {
   });
   const navigate = useNavigate();
 
-  const onSubmit = (data) => {
-    console.log('Registration Data:', data);
-    // Simulate sending data to backend (for now, pass it to admin login)
-    navigate('/admin-login', { state: { registrationData: data } });
+  const onSubmit = async (data) => {
+    try {
+      const response = await fetch('http://localhost:5000/admin/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        console.log('Admin registered:', result);
+        navigate('/admin-login');
+      } else {
+        console.error('Registration failed:', result.error);
+      }
+    } catch (error) {
+      console.error('Error:', error);
+    }
   };
 
   return (

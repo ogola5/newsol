@@ -1,26 +1,48 @@
-import { useState } from 'react';
-import { Box, TextField, Button, Typography } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
+import { useState } from "react";
+import { Box, TextField, Button, Typography } from "@mui/material";
+import { useNavigate } from "react-router-dom";
 
 function StudentLogin() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState(null);
   const navigate = useNavigate();
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    // No validation for now - accept any login attempt
-    // Create a mock student profile with entered data (or leave it minimal)
-    const mockStudentData = {
-      fullName: 'Test Student', // Mock data if no registration data is needed
-      email: email || 'test@student.com', // Use entered email or default
-      dateOfBirth: '2005-01-01', // Mock DOB
-      gradeLevel: '10', // Mock grade level
-      // Add parentEmail if required, but optional for now
+
+    const loginData = {
+      email: email,
+      password: password,
+      user_type: "student", // Ensure this matches one of the expected values
     };
 
-    // Navigate to StudentProfile with mock data
-    navigate('/profile/student', { state: { studentData: mockStudentData } });
+    try {
+      const response = await fetch("http://localhost:5000/users/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(loginData),
+      });
+
+      if (!response.ok) {
+        const errorMessage = await response.json();
+        throw new Error(errorMessage.error || "Login failed");
+      }
+
+      const result = await response.json();
+      console.log("Login Success:", result);
+
+      // Store JWT token in local storage
+      localStorage.setItem("token", result.token);
+      localStorage.setItem("user", JSON.stringify(result.user));
+
+      // Navigate to the student dashboard
+      navigate("/dashboard-student");
+
+    } catch (error) {
+      console.error("Login Error:", error.message);
+      setError(error.message); // Display error to user
+    }
   };
 
   return (
@@ -29,24 +51,29 @@ function StudentLogin() {
       onSubmit={handleLogin}
       sx={{
         maxWidth: 400,
-        mx: 'auto',
+        mx: "auto",
         mt: 4,
         p: 4,
-        backgroundColor: 'rgba(255, 255, 255, 0.9)',
+        backgroundColor: "rgba(255, 255, 255, 0.9)",
         borderRadius: 2,
         boxShadow: 3,
       }}
     >
-      <Typography variant="h5" gutterBottom sx={{ color: 'text.primary', fontWeight: 'bold' }}>
+      <Typography variant="h5" gutterBottom sx={{ color: "text.primary", fontWeight: "bold" }}>
         Student Login
       </Typography>
+      {error && (
+        <Typography color="error" sx={{ mb: 2 }}>
+          {error}
+        </Typography>
+      )}
       <TextField
         fullWidth
         label="Email"
         type="email"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
-        sx={{ mb: 2, backgroundColor: 'rgba(255, 255, 255, 0.8)' }}
+        sx={{ mb: 2, backgroundColor: "rgba(255, 255, 255, 0.8)" }}
       />
       <TextField
         fullWidth
@@ -54,7 +81,7 @@ function StudentLogin() {
         type="password"
         value={password}
         onChange={(e) => setPassword(e.target.value)}
-        sx={{ mb: 2, backgroundColor: 'rgba(255, 255, 255, 0.8)' }}
+        sx={{ mb: 2, backgroundColor: "rgba(255, 255, 255, 0.8)" }}
       />
       <Button type="submit" variant="contained" color="primary" fullWidth>
         Log In

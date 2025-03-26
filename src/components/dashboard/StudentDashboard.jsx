@@ -1,129 +1,190 @@
-import { useEffect, useState } from 'react';
-import PropTypes from 'prop-types'; // For prop-types
-import { Box, Typography, LinearProgress, Grid, Button, Paper, useTheme } from '@mui/material';
-import { useNavigate, useLocation } from 'react-router-dom';
-import SchoolIcon from '@mui/icons-material/School'; // For student identity
-import TrendingUpIcon from '@mui/icons-material/TrendingUp'; // For completion
-import StarIcon from '@mui/icons-material/Star'; // For mastery
-import CheckCircleIcon from '@mui/icons-material/CheckCircle'; // For achievements
-import { styled } from '@mui/system';
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { 
+  Box, Typography, Grid, Paper, CircularProgress, Button, TextField, Snackbar, Alert 
+} from "@mui/material";
+import SchoolIcon from "@mui/icons-material/School";
+import AssignmentIcon from "@mui/icons-material/Assignment";
+import TrendingUpIcon from "@mui/icons-material/TrendingUp";
+import NotificationsActiveIcon from "@mui/icons-material/NotificationsActive";
+import LogoutIcon from "@mui/icons-material/Logout";
+import axios from "axios";
+import { darken } from "@mui/system"; // Import darken function
 
-// Styled component for progress bars
-const StyledLinearProgress = styled(LinearProgress)(({ theme }) => ({
-  height: 10,
-  borderRadius: 5,
-  marginBottom: theme.spacing(2),
-}));
-
-function StudentDashboard({ isAuthenticated }) {
+function StudentDashboard() {
   const navigate = useNavigate();
-  const location = useLocation();
-  const theme = useTheme();
+  const [progress, setProgress] = useState(65); // Mock progress percentage
+  const [studentName, setStudentName] = useState("John Doe");
+  const [query, setQuery] = useState("");
+  const [response, setResponse] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  // Mock data for student progress
-  const [studentProgress, setStudentProgress] = useState({
-    name: 'Sarah',
-    subjects: [
-      { name: 'Mathematics', completion: 85, mastery: 'Advanced' },
-      { name: 'Reading', completion: 60, mastery: 'Intermediate' },
-      { name: 'Science', completion: 45, mastery: 'Beginner' },
-      { name: 'History', completion: 70, mastery: 'Intermediate' },
-      { name: 'Geography', completion: 55, mastery: 'Beginner' },
-    ],
-    achievements: [
-      { name: 'Math Whiz', icon: <CheckCircleIcon /> },
-      { name: 'Bookworm', icon: <CheckCircleIcon /> },
-    ],
-  });
-
-  // Commented-out authentication logic (uncomment when needed)
-  /*
   useEffect(() => {
-    if (!isAuthenticated) {
-      navigate('/student-login', { state: { from: location.pathname } });
+    const token = localStorage.getItem("token");
+    if (!token) {
+      navigate("/student-login");
     }
-  }, [isAuthenticated, navigate, location]);
-  */
+  }, [navigate]);
 
-  // API placeholder (uncomment when backend is ready)
-  /*
-  useEffect(() => {
-    const fetchStudentData = async () => {
-      try {
-        const response = await fetch('/api/student/progress');
-        const data = await response.json();
-        setStudentProgress(data);
-      } catch (error) {
-        console.error('Error fetching student data:', error);
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    navigate("/student-login");
+  };
+
+  const handleQuery = async () => {
+    if (!query.trim()) {
+      setError("Please enter a question");
+      return;
+    }
+    
+    setLoading(true);
+    setError(null);
+  
+    try {
+      const token = localStorage.getItem("token");
+      const res = await axios.post(
+        "http://127.0.0.1:5000/query/",  // Note trailing slash
+        { 
+          query: query,
+          // Add these if your backend uses them
+          grade: "8", // Example grade, can be dynamic
+          subject: "science" // Example subject
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+  
+      if (res.data.success) {
+        setResponse(res.data.results || []);
+      } else {
+        setError(res.data.error || "Unknown error occurred");
       }
-    };
-    fetchStudentData();
-  }, []);
-  */
+    } catch (error) {
+      console.error("Query Error:", error);
+      setError(error.response?.data?.error || 
+              error.message || 
+              "Failed to get response from server");
+    } finally {
+      setLoading(false);
+    }
+  };
+  
 
   return (
-    <Box sx={{ p: 4, maxWidth: 1200, mx: 'auto' }}>
-      <Typography variant="h4" gutterBottom sx={{ display: 'flex', alignItems: 'center', mb: 4 }}>
-        <SchoolIcon sx={{ mr: 2, color: theme.palette.primary.main }} /> Welcome, {studentProgress.name}! Your Learning Progress
-      </Typography>
+    <Box sx={{ p: 4, backgroundColor: "#f4f6f8", minHeight: "100vh" }}>
+      {/* Header */}
+      <Box sx={{ mb: 3, textAlign: "center" }}>
+        <Typography variant="h4" sx={{ fontWeight: "bold", color: "#2c3e50" }}>
+          🎓 Welcome, {studentName}!
+        </Typography>
+        <Typography variant="subtitle1" sx={{ color: "#34495e" }}>
+          Keep pushing forward—every step counts!
+        </Typography>
+      </Box>
 
-      {/* Subjects Grid */}
-      <Grid container spacing={4}>
-        {studentProgress.subjects.map((subject, index) => (
-          <Grid item xs={12} sm={6} md={4} key={index}>
-            <Paper elevation={3} sx={{ p: 3, borderRadius: 2 }}>
-              <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold' }}>
-                {subject.name}
-              </Typography>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                <TrendingUpIcon sx={{ mr: 1, color: theme.palette.success.main }} />
-                <Typography>Completion: {subject.completion}%</Typography>
-              </Box>
-              <StyledLinearProgress variant="determinate" value={subject.completion} />
-              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <StarIcon sx={{ mr: 1, color: theme.palette.warning.main }} />
-                <Typography>Mastery: {subject.mastery}</Typography>
-              </Box>
-            </Paper>
-          </Grid>
-        ))}
-      </Grid>
-
-      {/* Achievements Section */}
-      <Typography variant="h5" sx={{ mt: 6, mb: 3, display: 'flex', alignItems: 'center' }}>
-        <CheckCircleIcon sx={{ mr: 2, color: theme.palette.secondary.main }} /> Achievements
-      </Typography>
+      {/* Dashboard Grid */}
       <Grid container spacing={3}>
-        {studentProgress.achievements.map((achievement, index) => (
-          <Grid item xs={12} sm={6} md={4} key={index}>
-            <Paper elevation={3} sx={{ p: 3, borderRadius: 2, display: 'flex', alignItems: 'center' }}>
-              {achievement.icon}
-              <Typography variant="body1" sx={{ ml: 2 }}>
-                {achievement.name}
-              </Typography>
-            </Paper>
-          </Grid>
-        ))}
+        <Grid item xs={12} sm={6} md={3}>
+          <Paper sx={cardStyle("#2980b9")} elevation={3}>
+            <SchoolIcon sx={{ fontSize: 50 }} />
+            <Typography variant="h6">My Courses</Typography>
+          </Paper>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <Paper sx={cardStyle("#27ae60")} elevation={3}>
+            <AssignmentIcon sx={{ fontSize: 50 }} />
+            <Typography variant="h6">Assignments</Typography>
+          </Paper>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <Paper sx={cardStyle("#f39c12")} elevation={3}>
+            <TrendingUpIcon sx={{ fontSize: 50 }} />
+            <Typography variant="h6">Progress</Typography>
+          </Paper>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <Paper sx={cardStyle("#e74c3c")} elevation={3}>
+            <NotificationsActiveIcon sx={{ fontSize: 50 }} />
+            <Typography variant="h6">Announcements</Typography>
+          </Paper>
+        </Grid>
       </Grid>
 
-      {/* Encouragement Message */}
-      <Typography variant="body1" sx={{ mt: 6, textAlign: 'center', fontStyle: 'italic' }}>
-        Keep up the great work! Your progress is accelerating—explore more challenges ahead.
-      </Typography>
+      {/* Progress Section */}
+      <Box sx={{ mt: 4, textAlign: "center" }}>
+        <Typography variant="h5" sx={{ fontWeight: "bold", color: "#2c3e50" }}>
+          Learning Progress
+        </Typography>
+        <Box sx={{ display: "flex", justifyContent: "center", mt: 2 }}>
+          <CircularProgress variant="determinate" value={progress} size={100} thickness={5} />
+        </Box>
+        <Typography variant="h6" sx={{ mt: 1, color: "#34495e" }}>
+          {progress}% Completed
+        </Typography>
+      </Box>
 
-      {/* Logout Button (Simulation) */}
-      <Box sx={{ mt: 4, textAlign: 'center' }}>
-        <Button variant="contained" color="primary" onClick={() => navigate('/')}>
-          Log Out (Simulation)
+      {/* Query Section for LLM-RAG */}
+      <Box sx={{ mt: 4, p: 3, backgroundColor: "white", borderRadius: 2 }}>
+        <Typography variant="h6" sx={{ mb: 2, color: "#2c3e50" }}>
+          🤖 Ask the AI Tutor
+        </Typography>
+        <TextField
+          fullWidth
+          variant="outlined"
+          placeholder="Type your question here..."
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          sx={{ mb: 2 }}
+        />
+        <Button variant="contained" onClick={handleQuery} disabled={loading} sx={{ mr: 2 }}>
+          {loading ? "Fetching..." : "Ask AI"}
+        </Button>
+
+        {/* AI Response Section */}
+        {response.length > 0 && (
+          <Box sx={{ mt: 2, p: 2, backgroundColor: "#ecf0f1", borderRadius: 2 }}>
+            <Typography variant="body1" sx={{ fontWeight: "bold", color: "#2c3e50" }}>
+              AI Recommendations:
+            </Typography>
+            <ul>
+              {response.map((item, index) => (
+                <li key={index} style={{ color: "#34495e" }}>{item}</li>
+              ))}
+            </ul>
+          </Box>
+        )}
+      </Box>
+
+      {/* Logout Button */}
+      <Box sx={{ textAlign: "center", mt: 4 }}>
+        <Button variant="contained" color="error" startIcon={<LogoutIcon />} onClick={handleLogout} sx={{ px: 3, py: 1 }}>
+          Logout
         </Button>
       </Box>
+
+      {/* Error Snackbar */}
+      <Snackbar open={!!error} autoHideDuration={5000} onClose={() => setError(null)}>
+        <Alert onClose={() => setError(null)} severity="error" sx={{ width: "100%" }}>
+          {error}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }
 
-// PropTypes to fix ESLint warning
-StudentDashboard.propTypes = {
-  isAuthenticated: PropTypes.bool.isRequired,
-};
+// Card Styles
+const cardStyle = (color) => ({
+  p: 3,
+  textAlign: "center",
+  backgroundColor: color,
+  color: "white",
+  borderRadius: 2,
+  "&:hover": { backgroundColor: darken(color, 0.2) },
+});
 
 export default StudentDashboard;
